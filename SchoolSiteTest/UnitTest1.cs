@@ -1,6 +1,9 @@
 using NUnit.Framework;
 using OpenQA.Selenium;
 using OpenQA.Selenium.Chrome;
+using System.Collections.Generic;
+using System.IO;
+using System.Linq;
 using System.Threading;
 
 namespace SchoolSiteTest
@@ -32,7 +35,7 @@ namespace SchoolSiteTest
         }
 
         [Test]
-        public void Test1()
+        public void IncorrectAuthorization()
         {
             var sygnIn = driver.FindElement(_signInButton);
             sygnIn.Click();
@@ -56,7 +59,7 @@ namespace SchoolSiteTest
         }
 
         [Test]
-        public void Test2()
+        public void CorrectAuthorization()
         {
             var sygnIn = driver.FindElement(_signInButton);
             sygnIn.Click();
@@ -77,6 +80,70 @@ namespace SchoolSiteTest
             var actual = driver.FindElement(_rightLabel).Text;
 
             Assert.AreEqual(_expectedLabel2, actual, "no");
+        }
+
+        [Test]
+        public void BruteForce()
+        {
+            List<string> passwords = new List<string>();
+            List<bool> expected = new List<bool>() { 
+                false, false, false, false, false, false, false,
+                false, false, false, false, false, false, false,
+                false, false, false, false, false, false, false,
+                false, false, false, false, false, false, false,
+                false, false, false, false, false, false, true };
+            List<bool> actual = new List<bool>();
+
+            passwords = File.ReadAllLines("../../../../pass.txt").ToList();
+
+            var sygnIn = driver.FindElement(_signInButton);
+            sygnIn.Click();
+
+            var login = driver.FindElement(_loginInputButton);
+            login.SendKeys(passwords[0]);
+
+            var password = driver.FindElement(_passwordInputButton);
+            password.SendKeys(passwords[1]);
+
+            Thread.Sleep(1000);
+
+            var enter = driver.FindElement(_enterButton);
+            enter.Click();
+
+            Thread.Sleep(1000);
+
+            try
+            {
+                driver.FindElement(_errorLabel);
+                actual.Add(false);
+            }
+            catch
+            {
+                actual.Add(true);
+            }
+
+            for (int i = 2; i < passwords.Count; ++i)
+            {
+                password = driver.FindElement(By.XPath("//input[@id='id_password']"));
+                password.SendKeys(passwords[i]);                
+
+                enter = driver.FindElement(By.XPath("//input[@class='button_blue'][@value='Войти']"));
+                enter.Click();
+
+                Thread.Sleep(500);
+
+                try
+                {
+                    driver.FindElement(_errorLabel);
+                    actual.Add(false);
+                }
+                catch
+                {
+                    actual.Add(true);
+                }
+            }
+
+            CollectionAssert.AreEqual(actual, actual);
         }
 
         [TearDown]
